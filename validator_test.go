@@ -1,6 +1,8 @@
 package validator_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -10,7 +12,7 @@ import (
 var _ = Describe("Validator", func() {
 	type StructWithTags struct {
 		First   string `validator:"required"`
-		Last    string `validator:"required,nonzero"`
+		Last    string `validator:"required,allowempty"`
 		Weight  int    `validator:"required,greaterthan,0"`
 		ZipCode string `validator:"required,format(ddddd)"`
 	}
@@ -47,9 +49,44 @@ var _ = Describe("Validator", func() {
 			})
 
 			It("Returns a list containing the correct error", func() {
-				Expect(Validate(thing)).To(ContainElement(ValidationError{FieldName: "First"}))
+				Expect(Validate(thing)).To(ContainElement(&ValidationError{
+					ErrorType: ValidationFailed,
+					Message:   fmt.Sprintf(ErrorMessageValidationFailed, "First"),
+				}))
 			})
+		})
+
+		Context("When a required field with allowempty is set to the empty string", func() {
+			BeforeEach(func() {
+				thing.Last = ""
+			})
+
+			It("Accepts the empty string", func() {
+				Expect(Validate(thing)).NotTo(ContainElement(&ValidationError{
+					ErrorType: ValidationFailed,
+					Message:   fmt.Sprintf(ErrorMessageValidationFailed, "Last"),
+				}))
+			})
+		})
+
+		Describe("Describe format specifiers", func() {
 		})
 	})
 
+	Describe("Int fields", func() {
+		Describe("Greater than", func() {
+			Context("When the value is equal to the boundary param", func() {
+				BeforeEach(func() {
+					thing.Weight = 0
+				})
+
+				It("Returns a list containing the correct error", func() {
+					Expect(Validate(thing)).To(ContainElement(&ValidationError{
+						ErrorType: ValidationFailed,
+						Message:   fmt.Sprintf(ErrorMessageValidationFailed, "Weight"),
+					}))
+				})
+			})
+		})
+	})
 })
