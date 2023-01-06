@@ -10,11 +10,17 @@ import (
 )
 
 var _ = Describe("Validator", func() {
+	type OtherStructWithTags struct {
+		Profession string `validator:"allowempty"`
+	}
+
 	type StructWithTags struct {
-		First   string `validator:"required"`
-		Last    string `validator:"required,allowempty"`
-		Weight  int    `validator:"required,greaterthan,0"`
-		ZipCode string `validator:"required,format(ddddd)"`
+		First          string   `validator:"required"`
+		Last           string   `validator:"required,allowempty"`
+		Weight         int      `validator:"required,greaterthan,0"`
+		ZipCode        string   `validator:"required,format(ddddd)"`
+		Nicknames      []string `validator:"required"`
+		EmbeddedStruct OtherStructWithTags
 	}
 
 	var (
@@ -31,6 +37,10 @@ var _ = Describe("Validator", func() {
 	})
 
 	Context("When no validations fail", func() {
+		BeforeEach(func() {
+			thing.Nicknames = []string{"foo", "frank", "george"}
+		})
+
 		It("Returns an empty list of errors", func() {
 			Expect(Validate(thing)).To(HaveLen(0))
 		})
@@ -88,5 +98,9 @@ var _ = Describe("Validator", func() {
 				})
 			})
 		})
+	})
+
+	Describe("Slice fields", func() {
+
 	})
 })

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type ValidatorFunc func(reflect.StructField, reflect.Value) []*ValidationError
+type ValidatorFunc func(reflect.StructField, reflect.Value) []error
 
 var (
 	Validators []ValidatorFunc
@@ -19,6 +19,7 @@ func init() {
 
 	Validators[reflect.String] = validateString
 	Validators[reflect.Int] = validateInt
+	Validators[reflect.Slice] = validateSlice
 }
 
 type ErrorType uint
@@ -44,8 +45,8 @@ func (ve *ValidationError) Error() string {
 	return ve.Message
 }
 
-func Validate(i interface{}) []*ValidationError {
-	validationErrors := make([]*ValidationError, 0)
+func Validate(i interface{}) []error {
+	validationErrors := make([]error, 0)
 
 	val := reflect.ValueOf(i)
 	if val.Kind() != reflect.Struct {
@@ -82,8 +83,8 @@ func isExportedField(field reflect.StructField) bool {
 	return field.PkgPath == ""
 }
 
-func validateString(f reflect.StructField, v reflect.Value) []*ValidationError {
-	errs := make([]*ValidationError, 0)
+func validateString(f reflect.StructField, v reflect.Value) []error {
+	errs := make([]error, 0)
 
 	reqs := parseRequirements(f.Tag.Get("validator"))
 	if reqs.required() && !reqs.allowEmpty() {
@@ -97,8 +98,8 @@ func validateString(f reflect.StructField, v reflect.Value) []*ValidationError {
 	return errs
 }
 
-func validateInt(f reflect.StructField, v reflect.Value) []*ValidationError {
-	errs := make([]*ValidationError, 0)
+func validateInt(f reflect.StructField, v reflect.Value) []error {
+	errs := make([]error, 0)
 
 	reqs := parseRequirements(f.Tag.Get("validator"))
 	if reqs.required() {
@@ -112,6 +113,10 @@ func validateInt(f reflect.StructField, v reflect.Value) []*ValidationError {
 		}
 	}
 	return errs
+}
+
+func validateSlice(f reflect.StructField, v reflect.Value) []error {
+	return nil
 }
 
 func parseRequirements(tag string) Requirements {
